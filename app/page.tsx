@@ -7,16 +7,20 @@ import { JobCard } from '@/components/JobCard';
 import { MatchDetailModal } from '@/components/MatchDetailModal';
 import { ResumeTailorDrawer } from '@/components/ResumeTailorDrawer';
 import { IngestSimulatorModal } from '@/components/IngestSimulatorModal';
-import { CandidateProfile, JobMatch, MatchCategory } from '@/lib/types';
+import { CandidateProfile, JobMatch } from '@/lib/types';
 import { DEFAULT_MOCK_PROFILE, MOCK_JOB_MATCHES } from '@/lib/mockData';
 import { fetchAllMatches, fetchCurrentCandidate } from '@/lib/supabase';
-import { Sparkles, Search, SlidersHorizontal, ShieldCheck, Zap, Bell, CheckCircle2, TrendingUp, Briefcase } from 'lucide-react';
+import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Play } from 'lucide-react';
 
 export default function DashboardPage() {
   const [candidate, setCandidate] = useState<CandidateProfile>(DEFAULT_MOCK_PROFILE);
   const [matches, setMatches] = useState<JobMatch[]>(MOCK_JOB_MATCHES);
-  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Live Web Scraper Search State
+  const [liveSearchQuery, setLiveSearchQuery] = useState('');
+  const [isSearchingLive, setIsSearchingLive] = useState(false);
+  const [liveSearchSuccessText, setLiveSearchSuccessText] = useState<string | null>(null);
 
   // Modals & Drawers State
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -65,6 +69,40 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLiveWebSearch = async (queryToSearch?: string) => {
+    const targetQuery = queryToSearch || liveSearchQuery || 'operations';
+    setIsSearchingLive(true);
+    setLiveSearchSuccessText(null);
+
+    try {
+      const res = await fetch('/api/jobs/search-live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: targetQuery }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Live job search failed');
+
+      if (data.matches && data.matches.length > 0) {
+        // Prepend new matches
+        setMatches((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const fresh = data.matches.filter((m: JobMatch) => !existingIds.has(m.id));
+          return [...fresh, ...prev];
+        });
+
+        setLiveSearchSuccessText(`Scraped ${data.foundCount} live web jobs for "${targetQuery}" & evaluated with Gemini AI!`);
+        setTimeout(() => setLiveSearchSuccessText(null), 6000);
+      }
+    } catch (err: any) {
+      console.error('Error in handleLiveWebSearch:', err);
+      setLiveSearchSuccessText(`Search error: ${err.message}`);
+    } finally {
+      setIsSearchingLive(false);
+    }
+  };
+
   const handleJobIngested = (newMatch: JobMatch) => {
     setMatches((prev) => {
       const exists = prev.some((m) => m.id === newMatch.id || m.job_id === newMatch.job_id);
@@ -106,7 +144,6 @@ export default function DashboardPage() {
     });
   }, [matches, selectedCategory, minMatchScore, searchQuery]);
 
-  // Metrics Metrics summary calculation
   const totalCount = matches.length;
   const highTransferableCount = matches.filter((m) => m.match_score >= 80).length;
   const directFitCount = matches.filter((m) => m.match_category === 'Direct Fit').length;
@@ -129,6 +166,14 @@ export default function DashboardPage() {
         <div className="bg-teal-500/20 border-b border-teal-500/40 text-teal-300 text-xs px-4 py-2 text-center flex items-center justify-center gap-2 font-medium animate-fade-in">
           <Bell className="w-4 h-4 text-teal-400" />
           <span>{alertNotificationText}</span>
+        </div>
+      )}
+
+      {/* Live Web Search Success Toast */}
+      {liveSearchSuccessText && (
+        <div className="bg-emerald-500/20 border-b border-emerald-500/40 text-emerald-300 text-xs px-4 py-2 text-center flex items-center justify-center gap-2 font-medium animate-fade-in">
+          <Globe className="w-4 h-4 text-emerald-400" />
+          <span>{liveSearchSuccessText}</span>
         </div>
       )}
 
@@ -190,8 +235,57 @@ export default function DashboardPage() {
               onClick={() => setIsProfileOpen(true)}
               className="text-xs font-semibold text-teal-400 hover:text-teal-300 hover:underline"
             >
-              Edit Candidate Profile / Upload Resume →
+              Edit Candidate Profile / Upload PDF Resume →
             </button>
+          </div>
+
+          {/* Live Web Job Search Bar */}
+          <div className="bg-gradient-to-r from-teal-950/40 via-slate-900/80 to-slate-950 border border-teal-500/30 p-4 rounded-2xl space-y-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-teal-400" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  Live Web Job Scraper & Matcher
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">Search the live web for real job postings & score them with Gemini AI</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={liveSearchQuery}
+                onChange={(e) => setLiveSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLiveWebSearch()}
+                placeholder="Type role to scrape live (e.g. Chief of Staff, Operations Lead, Product Ops)..."
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-teal-400 font-medium"
+              />
+              <button
+                onClick={() => handleLiveWebSearch()}
+                disabled={isSearchingLive}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 transition-all shrink-0 disabled:opacity-50"
+              >
+                {isSearchingLive ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                <span>{isSearchingLive ? 'Scraping Live Web...' : 'Fetch & Match Live Jobs'}</span>
+              </button>
+            </div>
+
+            {/* Quick Search Chips */}
+            <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Quick Scrape presets:</span>
+              {['Chief of Staff', 'Operations Lead', 'Product Operations', 'Strategic Projects'].map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => {
+                    setLiveSearchQuery(chip);
+                    handleLiveWebSearch(chip);
+                  }}
+                  className="bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg font-medium transition-colors"
+                >
+                  + {chip}
+                </button>
+              ))}
+            </div>
           </div>
 
         </div>
@@ -210,7 +304,7 @@ export default function DashboardPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search title, company, or skills..."
+              placeholder="Filter title, company, or skills..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
             />
           </div>
@@ -266,13 +360,13 @@ export default function DashboardPage() {
             <Briefcase className="w-10 h-10 text-slate-600 mx-auto" />
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-300">No jobs matching your filter parameters</h3>
-              <p className="text-xs text-slate-500">Try adjusting the match score slider or search terms, or trigger a web scraper payload.</p>
+              <p className="text-xs text-slate-500">Try adjusting the match score slider or search terms, or search the live web above.</p>
             </div>
             <button
-              onClick={() => setIsIngestOpen(true)}
+              onClick={() => handleLiveWebSearch('operations')}
               className="px-4 py-2 rounded-xl bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-bold hover:bg-teal-500/20 transition-all"
             >
-              Simulate Ingesting New Job
+              Fetch Live Web Jobs
             </button>
           </div>
         )}

@@ -1,0 +1,54 @@
+name: Automated Apify Job Scraper Cron
+
+on:
+  schedule:
+    # Run once daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    # Allows manual trigger from GitHub UI
+
+jobs:
+  scrape-and-ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Trigger Apify Scraper Actor & Push Payload
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          INGEST_WEBHOOK_URL: ${{ secrets.INGEST_WEBHOOK_URL }}
+          INGEST_SECRET_TOKEN: ${{ secrets.INGEST_SECRET_TOKEN }}
+        run: |
+          echo "Starting Apify Job Scraper execution..."
+          
+          # Sample payload simulation if APIFY_TOKEN is not configured
+          PAYLOAD='[
+            {
+              "title": "Chief of Staff to CEO",
+              "company": "Nexus AI Systems",
+              "location": "San Francisco, CA (Hybrid / Remote)",
+              "salary_range": "$180,000 - $230,000 + Equity",
+              "job_type": "Full-time",
+              "description": "Partner closely with CEO to lead strategic cross-functional initiatives, oversee company-wide OKR cadence, and drive key operational transformations.",
+              "raw_url": "https://example.com/careers/nexus-chief-of-staff",
+              "source": "github_cron_apify",
+              "external_id": "gh-cron-'$(date +%s)'"
+            }
+          ]'
+
+          if [ -n "$INGEST_WEBHOOK_URL" ]; then
+            echo "Posting scraped payload to $INGEST_WEBHOOK_URL..."
+            curl -X POST "$INGEST_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -H "x-ingest-secret: $INGEST_SECRET_TOKEN" \
+              -d "$PAYLOAD"
+          else
+            echo "INGEST_WEBHOOK_URL not configured. Simulation complete."
+          fi

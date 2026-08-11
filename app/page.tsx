@@ -1,0 +1,322 @@
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Navbar } from '@/components/Navbar';
+import { ProfileManager } from '@/components/ProfileManager';
+import { JobCard } from '@/components/JobCard';
+import { MatchDetailModal } from '@/components/MatchDetailModal';
+import { ResumeTailorDrawer } from '@/components/ResumeTailorDrawer';
+import { IngestSimulatorModal } from '@/components/IngestSimulatorModal';
+import { CandidateProfile, JobMatch, MatchCategory } from '@/lib/types';
+import { DEFAULT_MOCK_PROFILE, MOCK_JOB_MATCHES } from '@/lib/mockData';
+import { fetchAllMatches, fetchCurrentCandidate } from '@/lib/supabase';
+import { Sparkles, Search, SlidersHorizontal, ShieldCheck, Zap, Bell, CheckCircle2, TrendingUp, Briefcase } from 'lucide-react';
+
+export default function DashboardPage() {
+  const [candidate, setCandidate] = useState<CandidateProfile>(DEFAULT_MOCK_PROFILE);
+  const [matches, setMatches] = useState<JobMatch[]>(MOCK_JOB_MATCHES);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Modals & Drawers State
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isIngestOpen, setIsIngestOpen] = useState(false);
+  const [selectedDetailMatch, setSelectedDetailMatch] = useState<JobMatch | null>(null);
+  const [selectedTailorMatch, setSelectedTailorMatch] = useState<JobMatch | null>(null);
+  const [alertNotificationText, setAlertNotificationText] = useState<string | null>(null);
+
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [minMatchScore, setMinMatchScore] = useState<number>(60);
+
+  // Initial Load
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsRefreshing(true);
+    try {
+      const activeCandidate = await fetchCurrentCandidate();
+      setCandidate(activeCandidate);
+
+      const matchData = await fetchAllMatches();
+      if (matchData && matchData.length > 0) {
+        setMatches(matchData);
+      }
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleTestAlert = async () => {
+    try {
+      const res = await fetch('/api/alerts/test', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setAlertNotificationText(`Test Alert Dispatched for ${data.testedMatch.title}! (${data.alertResult.message})`);
+        setTimeout(() => setAlertNotificationText(null), 5000);
+      }
+    } catch (err) {
+      console.error('Error triggering test alert:', err);
+    }
+  };
+
+  const handleJobIngested = (newMatch: JobMatch) => {
+    setMatches((prev) => {
+      const exists = prev.some((m) => m.id === newMatch.id || m.job_id === newMatch.job_id);
+      if (exists) {
+        return prev.map((m) => (m.id === newMatch.id || m.job_id === newMatch.job_id ? newMatch : m));
+      }
+      return [newMatch, ...prev];
+    });
+  };
+
+  // Filtered Matches Computation
+  const filteredMatches = useMemo(() => {
+    return matches.filter((m) => {
+      const job = m.job;
+      if (!job) return false;
+
+      // Category filter
+      if (selectedCategory !== 'All' && m.match_category !== selectedCategory) {
+        return false;
+      }
+
+      // Min score filter
+      if (m.match_score < minMatchScore) {
+        return false;
+      }
+
+      // Search query
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = job.title.toLowerCase().includes(q);
+        const matchesCompany = job.company.toLowerCase().includes(q);
+        const matchesReasons = m.fit_reasons.some((r) => r.toLowerCase().includes(q));
+        if (!matchesTitle && !matchesCompany && !matchesReasons) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [matches, selectedCategory, minMatchScore, searchQuery]);
+
+  // Metrics Metrics summary calculation
+  const totalCount = matches.length;
+  const highTransferableCount = matches.filter((m) => m.match_score >= 80).length;
+  const directFitCount = matches.filter((m) => m.match_category === 'Direct Fit').length;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#090D16] text-slate-100">
+      
+      {/* Top Navigation */}
+      <Navbar
+        candidate={candidate}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenIngestSimulator={() => setIsIngestOpen(true)}
+        onOpenAlertTest={handleTestAlert}
+        isRefreshing={isRefreshing}
+        onRefresh={loadData}
+      />
+
+      {/* Alert Banner Toast */}
+      {alertNotificationText && (
+        <div className="bg-teal-500/20 border-b border-teal-500/40 text-teal-300 text-xs px-4 py-2 text-center flex items-center justify-center gap-2 font-medium animate-fade-in">
+          <Bell className="w-4 h-4 text-teal-400" />
+          <span>{alertNotificationText}</span>
+        </div>
+      )}
+
+      {/* Hero Header & Candidate Context Banner */}
+      <div className="border-b border-slate-800/60 bg-gradient-to-b from-slate-950 to-[#090D16] py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Gemini Transferable Skill Engine
+                </span>
+                <span className="text-xs text-slate-400 font-mono">Zero-Cost Serverless</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Passive Candidate Job Feed & Matcher
+              </h2>
+              <p className="text-sm text-slate-400 max-w-2xl">
+                Continuous automated scraping ingestion evaluated against candidate transferable skills beyond rigid keyword matching. Instant high-match alerting ($\ge 80\%$).
+              </p>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-3 gap-3 shrink-0">
+              <div className="bg-slate-900/80 border border-slate-800 p-3.5 rounded-xl text-center">
+                <span className="text-2xl font-extrabold text-white font-mono">{totalCount}</span>
+                <span className="text-[10px] text-slate-400 block uppercase font-bold mt-0.5">Jobs Evaluated</span>
+              </div>
+
+              <div className="bg-teal-500/10 border border-teal-500/30 p-3.5 rounded-xl text-center">
+                <span className="text-2xl font-extrabold text-teal-400 font-mono">{highTransferableCount}</span>
+                <span className="text-[10px] text-teal-300 block uppercase font-bold mt-0.5">High Matches ($\ge 80\%$)</span>
+              </div>
+
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-xl text-center">
+                <span className="text-2xl font-extrabold text-emerald-400 font-mono">{directFitCount}</span>
+                <span className="text-[10px] text-emerald-300 block uppercase font-bold mt-0.5">Direct Fits</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Active Candidate Headline Pill */}
+          <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400 font-bold text-xs">
+                Active Profile
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-200">{candidate.name} — <span className="text-teal-400">{candidate.title}</span></p>
+                <p className="text-xs text-slate-400 line-clamp-1">{candidate.transferable_skills.join(' • ')}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="text-xs font-semibold text-teal-400 hover:text-teal-300 hover:underline"
+            >
+              Edit Candidate Profile / Upload Resume →
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Main Dashboard Section */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
+        
+        {/* Search & Filter Controls */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+          
+          {/* Search Box */}
+          <div className="relative w-full md:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search title, company, or skills..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 text-xs">
+            {['All', 'Direct Fit', 'High Transferable Potential', 'Stretch Target'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap ${
+                  selectedCategory === cat
+                    ? 'bg-teal-500 text-slate-950 font-bold shadow-md shadow-teal-500/20'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Score Threshold Slider */}
+          <div className="flex items-center gap-3 text-xs w-full md:w-auto justify-end">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="text-slate-400 whitespace-nowrap">Min Score: <strong className="text-teal-400 font-mono">{minMatchScore}%</strong></span>
+            <input
+              type="range"
+              min="50"
+              max="95"
+              step="5"
+              value={minMatchScore}
+              onChange={(e) => setMinMatchScore(Number(e.target.value))}
+              className="w-24 accent-teal-500 cursor-pointer"
+            />
+          </div>
+
+        </div>
+
+        {/* Job Match Grid */}
+        {filteredMatches.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredMatches.map((match) => (
+              <JobCard
+                key={match.id}
+                match={match}
+                onOpenDetail={(m) => setSelectedDetailMatch(m)}
+                onOpenTailor={(m) => setSelectedTailorMatch(m)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center bg-slate-900/30 border border-dashed border-slate-800 rounded-2xl space-y-4">
+            <Briefcase className="w-10 h-10 text-slate-600 mx-auto" />
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-300">No jobs matching your filter parameters</h3>
+              <p className="text-xs text-slate-500">Try adjusting the match score slider or search terms, or trigger a web scraper payload.</p>
+            </div>
+            <button
+              onClick={() => setIsIngestOpen(true)}
+              className="px-4 py-2 rounded-xl bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-bold hover:bg-teal-500/20 transition-all"
+            >
+              Simulate Ingesting New Job
+            </button>
+          </div>
+        )}
+
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p>© 2026 Passive Candidate Job Board & Matcher. Built with Next.js, Supabase pgvector, and Gemini AI.</p>
+          <div className="flex items-center gap-4">
+            <span className="hover:text-slate-400 cursor-pointer" onClick={() => setIsIngestOpen(true)}>Web Scraper Setup</span>
+            <span>•</span>
+            <span className="hover:text-slate-400 cursor-pointer" onClick={() => setIsProfileOpen(true)}>Resume Manager</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals & Drawers */}
+      <ProfileManager
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        candidate={candidate}
+        onProfileUpdated={(newProf) => setCandidate(newProf)}
+      />
+
+      <MatchDetailModal
+        match={selectedDetailMatch}
+        onClose={() => setSelectedDetailMatch(null)}
+        onOpenTailor={(m) => setSelectedTailorMatch(m)}
+      />
+
+      <ResumeTailorDrawer
+        isOpen={Boolean(selectedTailorMatch)}
+        onClose={() => setSelectedTailorMatch(null)}
+        match={selectedTailorMatch}
+      />
+
+      <IngestSimulatorModal
+        isOpen={isIngestOpen}
+        onClose={() => setIsIngestOpen(false)}
+        onJobIngested={handleJobIngested}
+      />
+
+    </div>
+  );
+}

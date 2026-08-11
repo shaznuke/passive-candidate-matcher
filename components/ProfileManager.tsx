@@ -20,6 +20,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'view' | 'upload'>('view');
   const [rawResumeText, setRawResumeText] = useState(candidate.raw_resume_text || '');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [parseSuccess, setParseSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -27,8 +28,8 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
   if (!isOpen) return null;
 
   const handleParseSubmit = async () => {
-    if (!rawResumeText || rawResumeText.trim().length < 20) {
-      setErrorMessage('Please paste at least 20 characters of resume text or Markdown.');
+    if (!selectedFile && (!rawResumeText || rawResumeText.trim().length < 20)) {
+      setErrorMessage('Please select a PDF/text file or paste at least 20 characters of resume text.');
       return;
     }
 
@@ -37,11 +38,21 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
     setParseSuccess(false);
 
     try {
-      const res = await fetch('/api/candidate/parse-resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeText: rawResumeText }),
-      });
+      let res;
+      if (selectedFile && selectedFile.type === 'application/pdf') {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        res = await fetch('/api/candidate/parse-resume', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        res = await fetch('/api/candidate/parse-resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resumeText: rawResumeText }),
+        });
+      }
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to parse resume');
@@ -63,17 +74,22 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setRawResumeText(content);
-    };
-    reader.readAsText(file);
+    setSelectedFile(file);
+
+    if (file.type !== 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setRawResumeText(content);
+      };
+      reader.readAsText(file);
+    }
   };
 
   const handleResetToDefault = () => {
     onProfileUpdated(DEFAULT_MOCK_PROFILE);
     setRawResumeText(DEFAULT_MOCK_PROFILE.raw_resume_text);
+    setSelectedFile(null);
     setActiveTab('view');
   };
 
@@ -123,7 +139,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
             }`}
           >
             <Upload className="w-4 h-4" />
-            Upload / Parse Resume (Gemini)
+            Upload PDF / Text Resume (Gemini)
           </button>
         </div>
 
@@ -200,26 +216,34 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
               {/* File upload prompt */}
               <div className="border-2 border-dashed border-slate-700 hover:border-teal-500/50 rounded-xl p-6 text-center transition-colors bg-slate-900/40">
                 <Upload className="w-8 h-8 text-teal-400 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-200">Upload Resume File (.txt / .md)</p>
-                <p className="text-xs text-slate-400 mt-1">Or paste structured text / markdown directly below</p>
+                <p className="text-sm font-semibold text-slate-200">Upload PDF or Text Resume (.pdf / .txt / .md)</p>
+                <p className="text-xs text-slate-400 mt-1">Native PDF support powered by Gemini Multimodal AI</p>
                 <input
                   type="file"
-                  accept=".txt,.md,.markdown,.doc,.docx"
+                  accept=".pdf,.txt,.md,.markdown"
                   onChange={handleFileUpload}
                   className="mt-3 text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-500/10 file:text-teal-400 hover:file:bg-teal-500/20 cursor-pointer mx-auto"
                 />
+                {selectedFile && (
+                  <p className="text-xs text-teal-300 font-semibold mt-2">
+                    Selected File: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
               </div>
 
               {/* Raw Textarea */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                  <span>Resume Text Payload</span>
+                  <span>Or Paste Resume Text Payload</span>
                   <span className="text-[10px] text-slate-400 font-mono">{rawResumeText.length} chars</span>
                 </label>
                 <textarea
-                  rows={8}
+                  rows={6}
                   value={rawResumeText}
-                  onChange={(e) => setRawResumeText(e.target.value)}
+                  onChange={(e) => {
+                    setRawResumeText(e.target.value);
+                    setSelectedFile(null);
+                  }}
                   placeholder="Paste candidate resume text or markdown here..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                 />
@@ -234,7 +258,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
               {parseSuccess && (
                 <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 p-2.5 rounded-lg">
                   <CheckCircle2 className="w-4 h-4" />
-                  Successfully parsed resume with Gemini API! Updating profile...
+                  Successfully parsed resume with Gemini AI! Updating profile...
                 </div>
               )}
 
@@ -251,7 +275,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 transition-all disabled:opacity-50"
                 >
                   <Sparkles className={`w-4 h-4 ${isParsing ? 'animate-spin' : ''}`} />
-                  {isParsing ? 'Parsing with Gemini API...' : 'Parse Resume & Update Profile'}
+                  {isParsing ? 'Parsing with Gemini AI...' : 'Parse Resume & Update Profile'}
                 </button>
               </div>
 

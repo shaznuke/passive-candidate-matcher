@@ -6,11 +6,10 @@ import { ProfileManager } from '@/components/ProfileManager';
 import { JobCard } from '@/components/JobCard';
 import { MatchDetailModal } from '@/components/MatchDetailModal';
 import { ResumeTailorDrawer } from '@/components/ResumeTailorDrawer';
-import { IngestSimulatorModal } from '@/components/IngestSimulatorModal';
 import { CandidateProfile, JobMatch } from '@/lib/types';
 import { DEFAULT_MOCK_PROFILE, MOCK_JOB_MATCHES } from '@/lib/mockData';
 import { fetchAllMatches, fetchCurrentCandidate } from '@/lib/supabase';
-import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Upload, Compass, UserCheck, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
+import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Upload, Compass, UserCheck, ShieldCheck, Zap } from 'lucide-react';
 
 export default function DashboardPage() {
   const [candidate, setCandidate] = useState<CandidateProfile>(DEFAULT_MOCK_PROFILE);
@@ -24,7 +23,6 @@ export default function DashboardPage() {
 
   // Modals & Drawers State
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isIngestOpen, setIsIngestOpen] = useState(false);
   const [selectedDetailMatch, setSelectedDetailMatch] = useState<JobMatch | null>(null);
   const [selectedTailorMatch, setSelectedTailorMatch] = useState<JobMatch | null>(null);
   const [alertNotificationText, setAlertNotificationText] = useState<string | null>(null);
@@ -102,16 +100,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleJobIngested = (newMatch: JobMatch) => {
-    setMatches((prev) => {
-      const exists = prev.some((m) => m.id === newMatch.id || m.job_id === newMatch.job_id);
-      if (exists) {
-        return prev.map((m) => (m.id === newMatch.id || m.job_id === newMatch.job_id ? newMatch : m));
-      }
-      return [newMatch, ...prev];
-    });
-  };
-
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
       const job = m.job;
@@ -150,7 +138,6 @@ export default function DashboardPage() {
       <Navbar
         candidate={candidate}
         onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenIngestSimulator={() => setIsIngestOpen(true)}
         onOpenAlertTest={handleTestAlert}
         isRefreshing={isRefreshing}
         onRefresh={loadData}
@@ -174,24 +161,19 @@ export default function DashboardPage() {
       {/* Main 3-Column LinkedIn Executive Layout */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* ========================================================================= */}
-        {/* LEFT COLUMN: Candidate Profile & Career Card (3 Cols) */}
-        {/* ========================================================================= */}
+        {/* LEFT COLUMN: Candidate Profile & Career Card */}
         <div className="lg:col-span-3 space-y-5">
           
-          {/* Candidate Identity Card */}
           <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            {/* Top Cover Gradient */}
             <div className="h-16 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700 relative" />
             
             <div className="p-5 pt-0 space-y-4 relative">
-              {/* Avatar */}
               <div className="-mt-9 flex justify-between items-end">
                 <div className="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-teal-400 flex items-center justify-center font-bold text-teal-300 text-lg shadow-lg">
                   <UserCheck className="w-8 h-8" />
                 </div>
                 <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-full uppercase">
-                  Verified Resume
+                  Active Resume
                 </span>
               </div>
 
@@ -200,12 +182,10 @@ export default function DashboardPage() {
                 <p className="text-xs text-teal-400 font-semibold mt-0.5">{candidate.title}</p>
               </div>
 
-              {/* Summary snippet */}
               <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed italic bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 "{candidate.summary}"
               </p>
 
-              {/* Upload Button */}
               <button
                 onClick={() => setIsProfileOpen(true)}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-extrabold shadow-md shadow-teal-500/20 transition-all"
@@ -216,7 +196,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Transferable Competencies */}
           <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
@@ -234,12 +213,9 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* ========================================================================= */}
-        {/* CENTER COLUMN: Smart Job Feed & Search Controls (6 Cols) */}
-        {/* ========================================================================= */}
+        {/* CENTER COLUMN: Smart Job Feed & Search Controls */}
         <div className="lg:col-span-6 space-y-5">
           
-          {/* Smart Web Job Search Bar */}
           <div className="bg-[#0f172a]/90 border border-teal-500/30 p-5 rounded-2xl space-y-4 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -272,7 +248,6 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Quick Match for Resume Button */}
             <button
               onClick={() => handleLiveWebSearch('')}
               disabled={isSearchingLive}
@@ -283,7 +258,6 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Category Filter Tabs & Min Score Slider */}
           <div className="bg-[#0f172a]/90 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-xl">
             <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs">
               {['All', 'Direct Fit', 'High Transferable Potential', 'Stretch Target'].map((cat) => (
@@ -320,7 +294,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Job Feed List */}
           {filteredMatches.length > 0 ? (
             <div className="space-y-4">
               {filteredMatches.map((match) => (
@@ -350,12 +323,9 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* ========================================================================= */}
-        {/* RIGHT COLUMN: AI Career Intelligence & Alerts (3 Cols) */}
-        {/* ========================================================================= */}
+        {/* RIGHT COLUMN: AI Career Intelligence & Alerts */}
         <div className="lg:col-span-3 space-y-5">
           
-          {/* AI Match Stats */}
           <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
             <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -380,7 +350,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Portal Job Scrapes */}
           <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-teal-400" />
@@ -442,12 +411,6 @@ export default function DashboardPage() {
         isOpen={Boolean(selectedTailorMatch)}
         onClose={() => setSelectedTailorMatch(null)}
         match={selectedTailorMatch}
-      />
-
-      <IngestSimulatorModal
-        isOpen={isIngestOpen}
-        onClose={() => setIsIngestOpen(false)}
-        onJobIngested={handleJobIngested}
       />
 
     </div>

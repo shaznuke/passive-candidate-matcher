@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, UserCheck, Bot, Database, Bell, RefreshCw, Zap } from 'lucide-react';
+import { Sparkles, UserCheck, Bot, Database, Bell, RefreshCw, PlusCircle } from 'lucide-react';
 import { CandidateProfile } from '@/lib/types';
 
 interface NavbarProps {
@@ -38,48 +38,43 @@ export const Navbar: React.FC<NavbarProps> = ({
                 PASSIVE<span className="text-teal-400 font-extrabold">MATCH</span>
               </h1>
               <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                v1.0 Serverless
+                AI Career Engine
               </span>
             </div>
             <p className="text-xs text-slate-400 font-medium hidden sm:block">
-              Gemini Transferable Skill & Passive Job Matcher
+              Transferable Skill Matching & Automated Job Alerts
             </p>
           </div>
         </div>
 
-        {/* Status Indicators & Action Bar */}
+        {/* Action Bar */}
         <div className="flex items-center gap-3">
           
-          {/* Status Badges (Hidden on tiny mobile) */}
+          {/* Status Badges */}
           <div className="hidden lg:flex items-center gap-2 text-xs font-mono bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg">
             <div className="flex items-center gap-1.5 text-slate-300">
               <Bot className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Gemini 2.5</span>
-            </div>
-            <span className="text-slate-700">|</span>
-            <div className="flex items-center gap-1.5 text-slate-300">
-              <Database className="w-3.5 h-3.5 text-teal-400" />
-              <span>pgvector</span>
+              <span>Gemini AI Active</span>
             </div>
           </div>
 
-          {/* Test Alert Button */}
+          {/* Test Notification Button */}
           <button
             onClick={onOpenAlertTest}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition-all hover:text-white"
-            title="Test Telegram / Email Alert Dispatch"
+            title="Test Telegram or Email notifications"
           >
             <Bell className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden md:inline">Test Alerts</span>
+            <span className="hidden md:inline">Test Alert</span>
           </button>
 
-          {/* Simulate Scraper Webhook */}
+          {/* Add Job Button */}
           <button
             onClick={onOpenIngestSimulator}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white shadow-md shadow-teal-500/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Ingest Job Webhook</span>
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Add Job to Match</span>
           </button>
 
           {/* Refresh Data */}
@@ -87,7 +82,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onRefresh}
             disabled={isRefreshing}
             className="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-teal-400 transition-colors"
-            title="Refresh Match Feed"
+            title="Refresh Job Feed"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-teal-400' : ''}`} />
           </button>

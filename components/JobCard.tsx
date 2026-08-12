@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ExternalLink, Sparkles, FileEdit, ArrowRight, Building2, MapPin, DollarSign, Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { ExternalLink, Sparkles, FileEdit, ArrowRight, Building2, MapPin, DollarSign, CheckCircle2 } from 'lucide-react';
 import { JobMatch } from '@/lib/types';
 
 interface JobCardProps {
@@ -21,7 +21,6 @@ export const JobCard: React.FC<JobCardProps> = ({
   const score = match.match_score;
   const category = match.match_category;
 
-  // Color mappings based on match category and score
   const scoreColor =
     score >= 85
       ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 shadow-emerald-500/10'
@@ -46,9 +45,6 @@ export const JobCard: React.FC<JobCardProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${categoryBadge}`}>
               {category}
-            </span>
-            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
-              {job.source || 'Scraper'}
             </span>
           </div>
 
@@ -85,10 +81,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
-            Gemini Transferable Fit Analysis
-          </span>
-          <span className="text-[10px] text-slate-500">
-            {match.transferable_skills_mapping?.length || 0} skills mapped
+            AI Transferable Skill Rationale
           </span>
         </div>
 
@@ -108,18 +101,18 @@ export const JobCard: React.FC<JobCardProps> = ({
           onClick={() => onOpenDetail(match)}
           className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-teal-400 transition-colors"
         >
-          <span>Deep Fit Analysis</span>
+          <span>Why It Fits</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
         <div className="flex items-center gap-2">
-          {job.raw_url && (
+          {job.raw_url && job.raw_url !== '#' && (
             <a
               href={job.raw_url}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white transition-all"
-              title="View Raw Job Post"
+              title="Open Original Job Link"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
@@ -130,7 +123,7 @@ export const JobCard: React.FC<JobCardProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold transition-all shadow-sm"
           >
             <FileEdit className="w-3.5 h-3.5" />
-            <span>Tailor Resume</span>
+            <span>Tailor My Resume</span>
           </button>
         </div>
       </div>

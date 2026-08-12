@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Zap, Sparkles, CheckCircle2, AlertTriangle, Code, Play } from 'lucide-react';
+import { X, PlusCircle, CheckCircle2, AlertTriangle, Code, Play, FileText } from 'lucide-react';
 import { JobMatch } from '@/lib/types';
 
 interface IngestSimulatorModalProps {
@@ -12,40 +12,40 @@ interface IngestSimulatorModalProps {
 
 const PRESET_SAMPLE_JOBS = [
   {
-    name: 'Chief of Staff (High Transferable Fit)',
+    name: 'Chief of Staff (High Strategic Fit)',
     job: {
       title: 'Chief of Staff to CEO',
       company: 'Quantum Scale AI',
       location: 'San Francisco, CA / Remote',
       salary_range: '$200,000 - $250,000 + Equity',
       job_type: 'Full-time',
-      source: 'apify_greenhouse',
+      source: 'Greenhouse',
       external_id: 'gh-qs-99120',
       description: `Partner directly with CEO to drive strategic execution, cross-functional OKR alignment, and high-impact operational transformations. Lead company-wide QBR cadences and resolve complex organizational bottlenecks.`
     }
   },
   {
-    name: 'VP of Special Operations (Direct Fit)',
+    name: 'VP of Special Operations (Direct Operations Fit)',
     job: {
       title: 'VP of Special Operations',
       company: 'Aether Logistics Tech',
       location: 'New York, NY / Remote',
       salary_range: '$220,000 - $270,000',
       job_type: 'Full-time',
-      source: 'apify_lever',
+      source: 'Lever',
       external_id: 'lev-ae-4401',
       description: `Lead rapid-deployment operational teams managing crisis response, global vendor SLAs, and $15M+ operational budgets. Standardize playbooks across global distribution nodes.`
     }
   },
   {
-    name: 'Director of Product Strategy (Stretch Target)',
+    name: 'Director of Product Strategy (Growth Role)',
     job: {
       title: 'Director of Product Strategy',
       company: 'MetaVerse Core',
       location: 'Austin, TX',
       salary_range: '$175,000 - $210,000',
       job_type: 'Full-time',
-      source: 'apify_linkedin',
+      source: 'LinkedIn',
       external_id: 'li-mv-1029',
       description: `Drive multi-year product roadmap vision, developer ecosystem monetization, and strategic API integrations. Requires deep developer relations and technical SDK background.`
     }
@@ -58,7 +58,7 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
   onJobIngested,
 }) => {
   const [selectedPreset, setSelectedPreset] = useState(0);
-  const [customJson, setCustomJson] = useState('');
+  const [customText, setCustomText] = useState('');
   const [useCustom, setUseCustom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resultMessage, setResultMessage] = useState<any>(null);
@@ -72,16 +72,22 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
     setResultMessage(null);
 
     let payload;
-    try {
-      if (useCustom) {
-        payload = JSON.parse(customJson);
-      } else {
-        payload = PRESET_SAMPLE_JOBS[selectedPreset].job;
+    if (useCustom) {
+      if (!customText || customText.trim().length < 20) {
+        setError('Please paste at least 20 characters of job description text.');
+        setIsSubmitting(false);
+        return;
       }
-    } catch (e) {
-      setError('Invalid JSON syntax in custom payload.');
-      setIsSubmitting(false);
-      return;
+      payload = {
+        title: 'Custom Added Job',
+        company: 'Target Company',
+        location: 'Remote / Flexible',
+        salary_range: 'Competitive',
+        description: customText.trim(),
+        source: 'manual_input'
+      };
+    } else {
+      payload = PRESET_SAMPLE_JOBS[selectedPreset].job;
     }
 
     try {
@@ -95,7 +101,7 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Ingestion failed');
+      if (!res.ok) throw new Error(data.error || 'Failed to add job');
 
       setResultMessage(data);
       if (data.results && data.results.length > 0) {
@@ -103,7 +109,7 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
         onJobIngested(latestMatch);
       }
     } catch (err: any) {
-      setError(err.message || 'Error triggering webhook ingestion');
+      setError(err.message || 'Error adding job');
     } finally {
       setIsSubmitting(false);
     }
@@ -117,11 +123,11 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
-              <Zap className="w-5 h-5" />
+              <PlusCircle className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Web Scraper Ingestion Simulator</h2>
-              <p className="text-xs text-slate-400">Simulate Apify / Firecrawl webhook payload pushing to /api/jobs/ingest</p>
+              <h2 className="text-lg font-bold text-white">Add a Job to Match</h2>
+              <p className="text-xs text-slate-400">Select a sample job posting or paste your own job description to score with AI</p>
             </div>
           </div>
 
@@ -138,7 +144,7 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
           
           {/* Preset Buttons */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-300">Select Job Payload Preset</label>
+            <label className="text-xs font-semibold text-slate-300">Choose Sample Role</label>
             <div className="grid grid-cols-1 gap-2">
               {PRESET_SAMPLE_JOBS.map((preset, idx) => (
                 <button
@@ -165,22 +171,23 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
             </div>
           </div>
 
-          {/* Custom JSON Toggle */}
+          {/* Custom Text Toggle */}
           <div className="space-y-2">
             <button
               onClick={() => setUseCustom(!useCustom)}
               className="text-xs text-teal-400 hover:underline font-semibold flex items-center gap-1.5"
             >
-              <Code className="w-3.5 h-3.5" />
-              <span>{useCustom ? 'Switch to Preset Cards' : 'Or Edit Raw Webhook JSON Payload'}</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>{useCustom ? '← Back to Sample Roles' : 'Or Paste Custom Job Description Text'}</span>
             </button>
 
             {useCustom && (
               <textarea
                 rows={6}
-                value={customJson || JSON.stringify(PRESET_SAMPLE_JOBS[0].job, null, 2)}
-                onChange={(e) => setCustomJson(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500"
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                placeholder="Paste any job title or description here to score against your resume..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-sans focus:outline-none focus:border-teal-500"
               />
             )}
           </div>
@@ -196,13 +203,9 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
             <div className="p-4 bg-emerald-950/40 border border-emerald-800 text-emerald-300 text-xs rounded-xl space-y-2">
               <div className="flex items-center gap-2 font-bold text-sm text-emerald-400">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Job Ingested Successfully!</span>
+                <span>Job Added & Evaluated!</span>
               </div>
-              <p>Match Score: <span className="font-mono font-bold text-white">{resultMessage.results[0]?.match?.match_score}%</span> ({resultMessage.results[0]?.match?.match_category})</p>
-              <p className="text-[11px] text-slate-300">
-                Alert Dispatch: {resultMessage.results[0]?.alertDispatched?.telegramSent ? 'Telegram Sent! ' : 'Telegram Simulated. '}
-                {resultMessage.results[0]?.alertDispatched?.resendSent ? 'Resend Email Sent!' : 'Resend Email Simulated.'}
-              </p>
+              <p>AI Match Score: <span className="font-mono font-bold text-white">{resultMessage.results[0]?.match?.match_score}%</span> ({resultMessage.results[0]?.match?.match_category})</p>
             </div>
           )}
 
@@ -222,7 +225,7 @@ export const IngestSimulatorModal: React.FC<IngestSimulatorModalProps> = ({
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 transition-all disabled:opacity-50"
           >
             <Play className={`w-4 h-4 ${isSubmitting ? 'animate-spin' : ''}`} />
-            <span>{isSubmitting ? 'Ingesting & Matching with Gemini...' : 'Simulate Webhook Trigger'}</span>
+            <span>{isSubmitting ? 'Evaluating Fit with AI...' : 'Add Job & Calculate Match Score'}</span>
           </button>
         </div>
 

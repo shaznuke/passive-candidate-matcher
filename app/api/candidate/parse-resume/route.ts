@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseResumeWithGemini } from '@/lib/gemini';
 import { updateCandidateProfile } from '@/lib/supabase';
 
-// Safely load pdf-parse engine
+const mammoth = require('mammoth');
+
 function getPdfParser() {
   try {
     return require('pdf-parse');
@@ -25,8 +26,17 @@ export async function POST(req: NextRequest) {
       if (file) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        const fileName = (file.name || '').toLowerCase();
 
-        if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        if (fileName.endsWith('.docx') || fileName.endsWith('.doc') || file.type.includes('wordprocessingml') || file.type.includes('msword')) {
+          try {
+            const mammothResult = await mammoth.extractRawText({ buffer });
+            extractedText = mammothResult.value || '';
+          } catch (docErr) {
+            console.warn('mammoth word parsing failed, falling back to string conversion:', docErr);
+            extractedText = buffer.toString('utf-8');
+          }
+        } else if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
           const pdfParse = getPdfParser();
           if (pdfParse) {
             try {
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (!extractedText || extractedText.length < 15) {
       return NextResponse.json(
-        { error: 'Could not extract readable text from resume PDF. Please ensure the PDF is not an image scan or paste text directly.' },
+        { error: 'Could not extract readable text from resume document. Please ensure the file is not corrupted or paste text directly.' },
         { status: 400 }
       );
     }

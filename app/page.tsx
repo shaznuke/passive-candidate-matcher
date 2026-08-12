@@ -10,7 +10,7 @@ import { IngestSimulatorModal } from '@/components/IngestSimulatorModal';
 import { CandidateProfile, JobMatch } from '@/lib/types';
 import { DEFAULT_MOCK_PROFILE, MOCK_JOB_MATCHES } from '@/lib/mockData';
 import { fetchAllMatches, fetchCurrentCandidate } from '@/lib/supabase';
-import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Upload, Compass } from 'lucide-react';
+import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Upload, Compass, UserCheck, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
 
 export default function DashboardPage() {
   const [candidate, setCandidate] = useState<CandidateProfile>(DEFAULT_MOCK_PROFILE);
@@ -144,9 +144,9 @@ export default function DashboardPage() {
   const directFitCount = matches.filter((m) => m.match_category === 'Direct Fit').length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090D16] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#090D16] text-slate-100 font-sans">
       
-      {/* Top Navigation */}
+      {/* Top LinkedIn-Style Navigation */}
       <Navbar
         candidate={candidate}
         onOpenProfile={() => setIsProfileOpen(true)}
@@ -171,220 +171,252 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Hero Section */}
-      <div className="border-b border-slate-800/60 bg-gradient-to-b from-slate-950 to-[#090D16] py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+      {/* Main 3-Column LinkedIn Executive Layout */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* ========================================================================= */}
+        {/* LEFT COLUMN: Candidate Profile & Career Card (3 Cols) */}
+        {/* ========================================================================= */}
+        <div className="lg:col-span-3 space-y-5">
           
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          {/* Candidate Identity Card */}
+          <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            {/* Top Cover Gradient */}
+            <div className="h-16 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700 relative" />
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI Transferable Skill Matcher
+            <div className="p-5 pt-0 space-y-4 relative">
+              {/* Avatar */}
+              <div className="-mt-9 flex justify-between items-end">
+                <div className="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-teal-400 flex items-center justify-center font-bold text-teal-300 text-lg shadow-lg">
+                  <UserCheck className="w-8 h-8" />
+                </div>
+                <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-full uppercase">
+                  Verified Resume
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Passive Candidate Job Board
-              </h2>
-              <p className="text-sm text-slate-400 max-w-2xl">
-                Upload your resume to automatically scrape and match active job postings across LinkedIn, Naukri, Indeed, and enterprise job boards.
-              </p>
-            </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-3 gap-3 shrink-0">
-              <div className="bg-slate-900/80 border border-slate-800 p-3.5 rounded-xl text-center">
-                <span className="text-2xl font-extrabold text-white font-mono">{totalCount}</span>
-                <span className="text-[10px] text-slate-400 block uppercase font-bold mt-0.5">Total Jobs</span>
-              </div>
-
-              <div className="bg-teal-500/10 border border-teal-500/30 p-3.5 rounded-xl text-center">
-                <span className="text-2xl font-extrabold text-teal-400 font-mono">{highTransferableCount}</span>
-                <span className="text-[10px] text-teal-300 block uppercase font-bold mt-0.5">High Matches (80%+)</span>
-              </div>
-
-              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-xl text-center">
-                <span className="text-2xl font-extrabold text-emerald-400 font-mono">{directFitCount}</span>
-                <span className="text-[10px] text-emerald-300 block uppercase font-bold mt-0.5">Direct Fits</span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Active Candidate Headline + Auto Scrape Button */}
-          <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400 font-bold text-xs">
-                Active Resume
-              </div>
               <div>
-                <p className="text-sm font-bold text-slate-200">{candidate.name} — <span className="text-teal-400">{candidate.title}</span></p>
-                <p className="text-xs text-slate-400 line-clamp-1">{candidate.transferable_skills.join(' • ')}</p>
+                <h3 className="text-base font-extrabold text-white leading-snug">{candidate.name}</h3>
+                <p className="text-xs text-teal-400 font-semibold mt-0.5">{candidate.title}</p>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleLiveWebSearch('')}
-                disabled={isSearchingLive}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 text-xs font-extrabold shadow-md shadow-teal-500/20 transition-all disabled:opacity-50"
-              >
-                {isSearchingLive ? <Loader2 className="w-4 h-4 animate-spin" /> : <Compass className="w-4 h-4" />}
-                <span>{isSearchingLive ? 'Scraping LinkedIn/Naukri/Indeed...' : 'Find Active Jobs for My Resume'}</span>
-              </button>
+              {/* Summary snippet */}
+              <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed italic bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                "{candidate.summary}"
+              </p>
 
+              {/* Upload Button */}
               <button
                 onClick={() => setIsProfileOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-extrabold shadow-md shadow-teal-500/20 transition-all"
               >
-                <Upload className="w-3.5 h-3.5 text-teal-400" />
-                <span>Upload Resume (.docx / .pdf)</span>
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Word (.docx) or PDF</span>
               </button>
             </div>
           </div>
 
-          {/* Live Web Job Search Bar */}
-          <div className="bg-gradient-to-r from-teal-950/40 via-slate-900/80 to-slate-950 border border-teal-500/30 p-4 rounded-2xl space-y-3">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Transferable Competencies */}
+          <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Transferable Competencies
+            </h4>
+            <div className="space-y-1.5">
+              {candidate.transferable_skills.map((skill, idx) => (
+                <div key={idx} className="bg-slate-950/60 border border-slate-800/80 p-2 rounded-lg text-xs text-slate-300 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
+                  <span className="leading-snug">{skill}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* ========================================================================= */}
+        {/* CENTER COLUMN: Smart Job Feed & Search Controls (6 Cols) */}
+        {/* ========================================================================= */}
+        <div className="lg:col-span-6 space-y-5">
+          
+          {/* Smart Web Job Search Bar */}
+          <div className="bg-[#0f172a]/90 border border-teal-500/30 p-5 rounded-2xl space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-teal-400" />
-                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Live Web Job Scraper (LinkedIn, Naukri, Indeed)
-                </span>
+                <h3 className="text-sm font-extrabold text-white">Search LinkedIn, Naukri & Indeed</h3>
               </div>
-              <p className="text-[11px] text-slate-400">Scrape live job portals & calculate AI match scores against your resume</p>
+              <span className="text-[10px] text-teal-400 font-mono">Live Web Scraper</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={liveSearchQuery}
-                onChange={(e) => setLiveSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLiveWebSearch()}
-                placeholder="Type role to search online (e.g. Chief of Staff, Operations Lead, Product Ops)..."
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-teal-400 font-medium"
-              />
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  value={liveSearchQuery}
+                  onChange={(e) => setLiveSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLiveWebSearch()}
+                  placeholder="Type title (e.g. Chief of Staff, Operations Lead)..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-teal-400"
+                />
+              </div>
+
               <button
                 onClick={() => handleLiveWebSearch()}
                 disabled={isSearchingLive}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 transition-all shrink-0 disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md shadow-teal-500/20 transition-all shrink-0 disabled:opacity-50"
               >
                 {isSearchingLive ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                <span>{isSearchingLive ? 'Scraping Live Web...' : 'Search Jobs Now'}</span>
+                <span>{isSearchingLive ? 'Searching...' : 'Search Jobs'}</span>
               </button>
             </div>
 
-            {/* Quick Search Chips */}
-            <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Popular Portals:</span>
-              {['LinkedIn - Chief of Staff', 'Naukri - Operations Lead', 'Indeed - Product Operations', 'Glassdoor - Strategic Projects'].map((chip) => {
-                const keyword = chip.split(' - ')[1] || chip;
-                return (
-                  <button
-                    key={chip}
-                    onClick={() => {
-                      setLiveSearchQuery(keyword);
-                      handleLiveWebSearch(keyword);
-                    }}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-300 text-[11px] px-2.5 py-1 rounded-lg font-medium transition-colors"
-                  >
-                    + {chip}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Main Dashboard Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        
-        {/* Search & Filter Controls */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-          
-          {/* Search Box */}
-          <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by title or company..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
-            />
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 text-xs">
-            {['All', 'Direct Fit', 'High Transferable Potential', 'Stretch Target'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap ${
-                  selectedCategory === cat
-                    ? 'bg-teal-500 text-slate-950 font-bold shadow-md shadow-teal-500/20'
-                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Score Threshold Slider */}
-          <div className="flex items-center gap-3 text-xs w-full md:w-auto justify-end">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="text-slate-400 whitespace-nowrap">Min Match Score: <strong className="text-teal-400 font-mono">{minMatchScore}%</strong></span>
-            <input
-              type="range"
-              min="50"
-              max="95"
-              step="5"
-              value={minMatchScore}
-              onChange={(e) => setMinMatchScore(Number(e.target.value))}
-              className="w-24 accent-teal-500 cursor-pointer"
-            />
-          </div>
-
-        </div>
-
-        {/* Job Match Grid */}
-        {filteredMatches.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredMatches.map((match) => (
-              <JobCard
-                key={match.id}
-                match={match}
-                onOpenDetail={(m) => setSelectedDetailMatch(m)}
-                onOpenTailor={(m) => setSelectedTailorMatch(m)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="py-16 text-center bg-slate-900/30 border border-dashed border-slate-800 rounded-2xl space-y-4">
-            <Briefcase className="w-10 h-10 text-slate-600 mx-auto" />
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-300">No jobs matching your filters</h3>
-              <p className="text-xs text-slate-500">Try searching for a role above or click "Find Active Jobs for My Resume".</p>
-            </div>
+            {/* Quick Match for Resume Button */}
             <button
               onClick={() => handleLiveWebSearch('')}
-              className="px-4 py-2 rounded-xl bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-bold hover:bg-teal-500/20 transition-all"
+              disabled={isSearchingLive}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-slate-950 font-extrabold text-xs shadow-md shadow-teal-500/20 transition-all disabled:opacity-50"
             >
-              Find Active Jobs for My Resume
+              {isSearchingLive ? <Loader2 className="w-4 h-4 animate-spin" /> : <Compass className="w-4 h-4" />}
+              <span>{isSearchingLive ? 'Scraping Live Web Job Boards...' : 'Find Active Jobs for My Resume'}</span>
             </button>
           </div>
-        )}
+
+          {/* Category Filter Tabs & Min Score Slider */}
+          <div className="bg-[#0f172a]/90 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-xl">
+            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs">
+              {['All', 'Direct Fit', 'High Transferable Potential', 'Stretch Target'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+                    selectedCategory === cat
+                      ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/60">
+              <span className="text-slate-400 flex items-center gap-1">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                <span>Min Match Score:</span>
+                <strong className="text-teal-400 font-mono">{minMatchScore}%</strong>
+              </span>
+
+              <input
+                type="range"
+                min="50"
+                max="95"
+                step="5"
+                value={minMatchScore}
+                onChange={(e) => setMinMatchScore(Number(e.target.value))}
+                className="w-32 accent-teal-500 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Job Feed List */}
+          {filteredMatches.length > 0 ? (
+            <div className="space-y-4">
+              {filteredMatches.map((match) => (
+                <JobCard
+                  key={match.id}
+                  match={match}
+                  onOpenDetail={(m) => setSelectedDetailMatch(m)}
+                  onOpenTailor={(m) => setSelectedTailorMatch(m)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="py-16 text-center bg-[#0f172a]/40 border border-dashed border-slate-800 rounded-2xl space-y-4">
+              <Briefcase className="w-10 h-10 text-slate-600 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-300">No jobs matching your filters</h3>
+                <p className="text-xs text-slate-500">Click "Find Active Jobs for My Resume" above.</p>
+              </div>
+              <button
+                onClick={() => handleLiveWebSearch('')}
+                className="px-4 py-2 rounded-xl bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-bold hover:bg-teal-500/20 transition-all"
+              >
+                Find Active Jobs for My Resume
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* ========================================================================= */}
+        {/* RIGHT COLUMN: AI Career Intelligence & Alerts (3 Cols) */}
+        {/* ========================================================================= */}
+        <div className="lg:col-span-3 space-y-5">
+          
+          {/* AI Match Stats */}
+          <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              AI Match Intelligence
+            </h4>
+
+            <div className="space-y-3 text-xs">
+              <div className="bg-slate-950/60 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+                <span className="text-slate-400">Total Evaluated</span>
+                <span className="font-mono font-bold text-white text-base">{totalCount}</span>
+              </div>
+
+              <div className="bg-teal-500/10 border border-teal-500/30 p-3 rounded-xl flex items-center justify-between">
+                <span className="text-teal-300">High Fits (80%+)</span>
+                <span className="font-mono font-bold text-teal-400 text-base">{highTransferableCount}</span>
+              </div>
+
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl flex items-center justify-between">
+                <span className="text-emerald-300">Direct Fits</span>
+                <span className="font-mono font-bold text-emerald-400 text-base">{directFitCount}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Portal Job Scrapes */}
+          <div className="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-teal-400" />
+              Popular Job Portals
+            </h4>
+            <p className="text-[11px] text-slate-400">Scrape live job feeds on demand:</p>
+
+            <div className="space-y-2">
+              {[
+                { label: 'LinkedIn Jobs', term: 'Chief of Staff' },
+                { label: 'Naukri Stream', term: 'Operations Manager' },
+                { label: 'Indeed Corporate', term: 'Product Operations' },
+              ].map((p, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setLiveSearchQuery(p.term);
+                    handleLiveWebSearch(p.term);
+                  }}
+                  className="w-full text-left p-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-teal-500/40 text-xs text-slate-300 transition-all flex items-center justify-between"
+                >
+                  <span className="font-semibold">{p.label}</span>
+                  <span className="text-[10px] text-teal-400 font-mono">+ Scrape</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
 
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-800 bg-[#0b1329] py-6 text-center text-xs text-slate-500 mt-12">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 Passive Candidate Job Board & Matcher. Built with Next.js, Supabase, and Gemini AI.</p>
+          <p>© 2026 LINKEDAI — Passive Candidate Job Board & Matcher. Built with Next.js, Supabase, and Gemini AI.</p>
           <div className="flex items-center gap-4">
             <span className="hover:text-slate-400 cursor-pointer" onClick={() => setIsProfileOpen(true)}>My Resume</span>
           </div>

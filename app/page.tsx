@@ -10,7 +10,7 @@ import { IngestSimulatorModal } from '@/components/IngestSimulatorModal';
 import { CandidateProfile, JobMatch } from '@/lib/types';
 import { DEFAULT_MOCK_PROFILE, MOCK_JOB_MATCHES } from '@/lib/mockData';
 import { fetchAllMatches, fetchCurrentCandidate } from '@/lib/supabase';
-import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2 } from 'lucide-react';
+import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Upload } from 'lucide-react';
 
 export default function DashboardPage() {
   const [candidate, setCandidate] = useState<CandidateProfile>(DEFAULT_MOCK_PROFILE);
@@ -188,7 +188,7 @@ export default function DashboardPage() {
                 Passive Candidate Job Board
               </h2>
               <p className="text-sm text-slate-400 max-w-2xl">
-                Upload your resume to automatically find and score jobs based on your transferable leadership and operational skills.
+                Upload your Word document (.docx) or PDF resume to automatically find and score jobs based on your transferable leadership and operational skills.
               </p>
             </div>
 
@@ -216,7 +216,7 @@ export default function DashboardPage() {
           <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400 font-bold text-xs">
-                My Resume
+                Active Resume
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-200">{candidate.name} — <span className="text-teal-400">{candidate.title}</span></p>
@@ -226,9 +226,10 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setIsProfileOpen(true)}
-              className="text-xs font-semibold text-teal-400 hover:text-teal-300 hover:underline"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-extrabold shadow-md shadow-teal-500/20 transition-all"
             >
-              Upload PDF Resume / Edit Profile →
+              <Upload className="w-4 h-4" />
+              <span>Upload Word (.docx) or PDF Resume</span>
             </button>
           </div>
 
@@ -382,6 +383,7 @@ export default function DashboardPage() {
         onClose={() => setIsProfileOpen(false)}
         candidate={candidate}
         onProfileUpdated={(newProf) => setCandidate(newProf)}
+        defaultTab="upload"
       />
 
       <MatchDetailModal

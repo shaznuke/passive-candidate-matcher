@@ -129,11 +129,14 @@ export async function fetchCurrentCandidate(): Promise<CandidateProfile> {
       .single();
 
     if (!error && data) {
-      // Override legacy Alex Vance seed profile from Supabase DB
-      if (data.name === 'Alex Vance') {
+      // Clean override for legacy Alex Vance or Parsed Candidate seed profile
+      if (data.name === 'Alex Vance' || data.name === 'Parsed Candidate' || !data.name) {
         data.name = 'Your Profile';
         data.title = 'Upload Resume to Get Started';
         data.summary = 'Upload your Word document (.docx) or PDF resume to automatically extract your skills and score active job listings.';
+        data.core_skills = ['Upload Resume to Extract Skills'];
+        data.leadership_experience = ['Upload Resume to Extract Experience'];
+        data.transferable_skills = ['Operations', 'Leadership', 'Strategic Execution'];
       }
       return data as CandidateProfile;
     }

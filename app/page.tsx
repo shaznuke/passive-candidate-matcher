@@ -401,7 +401,7 @@ export default function DashboardPage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 bg-[#0b1329] py-6 text-center text-xs text-slate-500 mt-12">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 LINKEDAI — Passive Candidate Job Board & Matcher. Built with Next.js, Supabase, and Gemini AI.</p>
+          <p>© 2026 LINKEDAI — Candidate Job Board & Matcher. Built with Next.js, Supabase, and Gemini AI.</p>
           <div className="flex items-center gap-4">
             <span className="hover:text-slate-400 cursor-pointer" onClick={() => setIsProfileOpen(true)}>Upload Resume</span>
           </div>

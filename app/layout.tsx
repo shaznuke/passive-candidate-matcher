@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Passive Candidate Job Board & Matcher | AI Transferable Skill Engine',
-  description: 'Automated, serverless passive job board matching candidates using Gemini AI transferable skill analysis, automated alerts, and custom resume tailoring.',
+  title: 'LINKEDAI Job Board & Career Engine | AI Transferable Skill Engine',
+  description: 'Automated job board matching candidates using Gemini AI transferable skill analysis, automated alerts, and custom resume tailoring.',
 };
 
 export default function RootLayout({

@@ -28,26 +28,29 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
         const fileName = (file.name || '').toLowerCase();
 
-        if (fileName.endsWith('.docx') || fileName.endsWith('.doc') || file.type.includes('wordprocessingml') || file.type.includes('msword')) {
+        // Magic byte detection
+        const isDocxZip = buffer.length > 4 && buffer[0] === 0x50 && buffer[1] === 0x4B; // PK..
+        const isPdf = buffer.length > 4 && buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46; // %PDF
+        const isLegacyDoc = buffer.length > 4 && buffer[0] === 0xD0 && buffer[1] === 0xCF; // Compound file
+
+        if (isDocxZip || isLegacyDoc || fileName.endsWith('.docx') || fileName.endsWith('.doc') || file.type.includes('wordprocessingml') || file.type.includes('msword')) {
           try {
             const mammothResult = await mammoth.extractRawText({ buffer });
             extractedText = mammothResult.value || '';
           } catch (docErr) {
-            console.warn('mammoth word parsing failed, falling back to string conversion:', docErr);
-            extractedText = buffer.toString('utf-8');
+            console.warn('mammoth word parsing error:', docErr);
+            extractedText = '';
           }
-        } else if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
+        } else if (isPdf || fileName.endsWith('.pdf') || file.type === 'application/pdf') {
           const pdfParse = getPdfParser();
           if (pdfParse) {
             try {
               const pdfData = await pdfParse(buffer);
               extractedText = pdfData.text || '';
             } catch (pdfErr) {
-              console.warn('pdf-parse parsing failed, attempting text buffer extraction:', pdfErr);
-              extractedText = buffer.toString('utf-8');
+              console.warn('pdf-parse error:', pdfErr);
+              extractedText = '';
             }
-          } else {
-            extractedText = buffer.toString('utf-8');
           }
         } else {
           extractedText = buffer.toString('utf-8');
@@ -61,31 +64,42 @@ export async function POST(req: NextRequest) {
 
       if (pdfBase64) {
         const buffer = Buffer.from(pdfBase64, 'base64');
-        const pdfParse = getPdfParser();
-        if (pdfParse) {
+        const isDocxZip = buffer.length > 4 && buffer[0] === 0x50 && buffer[1] === 0x4B;
+        if (isDocxZip) {
           try {
-            const pdfData = await pdfParse(buffer);
-            extractedText = pdfData.text || '';
+            const mammothResult = await mammoth.extractRawText({ buffer });
+            extractedText = mammothResult.value || '';
           } catch (err) {
-            extractedText = buffer.toString('utf-8');
+            extractedText = '';
           }
         } else {
-          extractedText = buffer.toString('utf-8');
+          const pdfParse = getPdfParser();
+          if (pdfParse) {
+            try {
+              const pdfData = await pdfParse(buffer);
+              extractedText = pdfData.text || '';
+            } catch (err) {
+              extractedText = '';
+            }
+          }
         }
       } else if (resumeText) {
         extractedText = resumeText;
       }
     }
 
-    // Clean up extracted text from control characters or binary noise
+    // Strip out ZIP headers, OpenXML noise, and control characters
     extractedText = extractedText
+      .replace(/PK![\s\S]*?\[Content_Types\]\.xml/gi, '')
+      .replace(/_rels\/\.rels/gi, '')
+      .replace(/word\/[a-zA-Z0-9_\.\/-]+/gi, '')
       .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
     if (!extractedText || extractedText.length < 15) {
       return NextResponse.json(
-        { error: 'Could not extract readable text from resume document. Please ensure the file is not corrupted or paste text directly.' },
+        { error: 'Could not extract readable text from document. Please make sure the file is a valid Word (.docx) or PDF document.' },
         { status: 400 }
       );
     }

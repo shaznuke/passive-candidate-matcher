@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseResumeWithGemini } from '@/lib/gemini';
 import { updateCandidateProfile } from '@/lib/supabase';
 
-// Require pdf-parse to avoid ESM default import issues in Next.js bundler
-const pdfParse = require('pdf-parse');
+// Safely load pdf-parse engine
+function getPdfParser() {
+  try {
+    return require('pdf-parse');
+  } catch (e) {
+    console.warn('pdf-parse library module unavailable:', e);
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,11 +27,16 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
 
         if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          try {
-            const pdfData = await pdfParse(buffer);
-            extractedText = pdfData.text || '';
-          } catch (pdfErr) {
-            console.warn('pdf-parse failed, falling back to string conversion:', pdfErr);
+          const pdfParse = getPdfParser();
+          if (pdfParse) {
+            try {
+              const pdfData = await pdfParse(buffer);
+              extractedText = pdfData.text || '';
+            } catch (pdfErr) {
+              console.warn('pdf-parse parsing failed, attempting text buffer extraction:', pdfErr);
+              extractedText = buffer.toString('utf-8');
+            }
+          } else {
             extractedText = buffer.toString('utf-8');
           }
         } else {
@@ -39,10 +51,15 @@ export async function POST(req: NextRequest) {
 
       if (pdfBase64) {
         const buffer = Buffer.from(pdfBase64, 'base64');
-        try {
-          const pdfData = await pdfParse(buffer);
-          extractedText = pdfData.text || '';
-        } catch (err) {
+        const pdfParse = getPdfParser();
+        if (pdfParse) {
+          try {
+            const pdfData = await pdfParse(buffer);
+            extractedText = pdfData.text || '';
+          } catch (err) {
+            extractedText = buffer.toString('utf-8');
+          }
+        } else {
           extractedText = buffer.toString('utf-8');
         }
       } else if (resumeText) {

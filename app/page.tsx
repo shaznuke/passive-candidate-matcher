@@ -7,13 +7,13 @@ import { JobCard } from '@/components/JobCard';
 import { MatchDetailModal } from '@/components/MatchDetailModal';
 import { ResumeTailorDrawer } from '@/components/ResumeTailorDrawer';
 import { CandidateProfile, JobMatch } from '@/lib/types';
-import { DEFAULT_MOCK_PROFILE, MOCK_JOB_MATCHES } from '@/lib/mockData';
+import { DEFAULT_MOCK_PROFILE } from '@/lib/mockData';
 import { fetchAllMatches, fetchCurrentCandidate } from '@/lib/supabase';
 import { Sparkles, Search, SlidersHorizontal, Bell, Briefcase, Globe, Loader2, Upload, Compass, UserCheck, ShieldCheck, Zap } from 'lucide-react';
 
 export default function DashboardPage() {
   const [candidate, setCandidate] = useState<CandidateProfile>(DEFAULT_MOCK_PROFILE);
-  const [matches, setMatches] = useState<JobMatch[]>(MOCK_JOB_MATCHES);
+  const [matches, setMatches] = useState<JobMatch[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Live Web Search State
@@ -41,7 +41,9 @@ export default function DashboardPage() {
     setIsRefreshing(true);
     try {
       const activeCandidate = await fetchCurrentCandidate();
-      setCandidate(activeCandidate);
+      if (activeCandidate && activeCandidate.name !== 'Alex Vance') {
+        setCandidate(activeCandidate);
+      }
 
       const matchData = await fetchAllMatches();
       if (matchData && matchData.length > 0) {
@@ -131,6 +133,8 @@ export default function DashboardPage() {
   const highTransferableCount = matches.filter((m) => m.match_score >= 80).length;
   const directFitCount = matches.filter((m) => m.match_category === 'Direct Fit').length;
 
+  const isDefaultProfile = candidate.name === 'Your Profile' || candidate.name === 'Alex Vance';
+
   return (
     <div className="min-h-screen flex flex-col bg-[#090D16] text-slate-100 font-sans">
       
@@ -173,7 +177,7 @@ export default function DashboardPage() {
                   <UserCheck className="w-8 h-8" />
                 </div>
                 <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-full uppercase">
-                  Active Resume
+                  {isDefaultProfile ? 'No Resume Uploaded' : 'Active Resume'}
                 </span>
               </div>
 
@@ -191,7 +195,7 @@ export default function DashboardPage() {
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-extrabold shadow-md shadow-teal-500/20 transition-all"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Upload Word (.docx) or PDF</span>
+                <span>Upload Resume</span>
               </button>
             </div>
           </div>
@@ -306,18 +310,30 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="py-16 text-center bg-[#0f172a]/40 border border-dashed border-slate-800 rounded-2xl space-y-4">
-              <Briefcase className="w-10 h-10 text-slate-600 mx-auto" />
+            <div className="py-16 text-center bg-[#0f172a]/40 border border-dashed border-slate-800 rounded-2xl space-y-4 p-6">
+              <Briefcase className="w-12 h-12 text-teal-400/60 mx-auto" />
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-300">No jobs matching your filters</h3>
-                <p className="text-xs text-slate-500">Click "Find Active Jobs for My Resume" above.</p>
+                <h3 className="text-base font-bold text-slate-200">No dummy data — Ready for your resume!</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Upload your Word (.docx) or PDF resume or click below to search live jobs on LinkedIn, Naukri & Indeed.
+                </p>
               </div>
-              <button
-                onClick={() => handleLiveWebSearch('')}
-                className="px-4 py-2 rounded-xl bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-bold hover:bg-teal-500/20 transition-all"
-              >
-                Find Active Jobs for My Resume
-              </button>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => setIsProfileOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-teal-500/20 flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload Resume</span>
+                </button>
+                <button
+                  onClick={() => handleLiveWebSearch('')}
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all flex items-center gap-2"
+                >
+                  <Compass className="w-4 h-4 text-teal-400" />
+                  <span>Search Jobs</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -387,7 +403,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>© 2026 LINKEDAI — Passive Candidate Job Board & Matcher. Built with Next.js, Supabase, and Gemini AI.</p>
           <div className="flex items-center gap-4">
-            <span className="hover:text-slate-400 cursor-pointer" onClick={() => setIsProfileOpen(true)}>My Resume</span>
+            <span className="hover:text-slate-400 cursor-pointer" onClick={() => setIsProfileOpen(true)}>Upload Resume</span>
           </div>
         </div>
       </footer>

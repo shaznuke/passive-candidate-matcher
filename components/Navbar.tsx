@@ -19,6 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isRefreshing,
   onRefresh,
 }) => {
+  const isDefaultProfile = candidate.name === 'Your Profile' || candidate.name === 'Alex Vance';
+
   return (
     <header className="sticky top-0 z-30 border-b border-slate-800 bg-[#0b1329]/95 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -45,13 +47,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Action Bar */}
         <div className="flex items-center gap-3 shrink-0">
           
-          {/* Primary Upload Resume Button */}
+          {/* Simple Upload Resume Button */}
           <button
             onClick={onOpenProfile}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 shadow-md shadow-teal-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Upload className="w-4 h-4" />
-            <span>Upload Resume (.docx / .pdf)</span>
+            <span>Upload Resume</span>
           </button>
 
           {/* Test Alert Button */}
@@ -83,10 +85,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="text-left hidden md:block">
               <p className="text-xs font-bold text-slate-200 group-hover:text-teal-300 transition-colors leading-tight">
-                {candidate.name}
+                {isDefaultProfile ? 'Upload Resume' : candidate.name}
               </p>
               <p className="text-[10px] text-slate-400 truncate max-w-[110px]">
-                {candidate.title}
+                {isDefaultProfile ? 'My Profile' : candidate.title}
               </p>
             </div>
           </button>

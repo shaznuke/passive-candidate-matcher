@@ -56,7 +56,6 @@ class InMemoryDb {
       created_at: new Date().toISOString()
     };
 
-    // Deduplicate by external_id if provided
     const existingIdx = this.jobs.findIndex(j => j.external_id === newJob.external_id);
     if (existingIdx >= 0) {
       this.jobs[existingIdx] = newJob;
@@ -73,7 +72,7 @@ class InMemoryDb {
 
   upsertMatch(match: Omit<JobMatch, 'id' | 'created_at'> & { id?: string }): JobMatch {
     const existingIndex = this.matches.findIndex(m => m.job_id === match.job_id);
-    const relatedJob = match.job || this.jobs.find(j => j.id === match.job_id) || MOCK_JOBS[0];
+    const relatedJob = match.job || this.jobs.find(j => j.id === match.job_id);
 
     const matchRecord: JobMatch = {
       id: match.id || (existingIndex >= 0 ? this.matches[existingIndex].id : `match-${Date.now()}`),
@@ -130,6 +129,12 @@ export async function fetchCurrentCandidate(): Promise<CandidateProfile> {
       .single();
 
     if (!error && data) {
+      // Override legacy Alex Vance seed profile from Supabase DB
+      if (data.name === 'Alex Vance') {
+        data.name = 'Your Profile';
+        data.title = 'Upload Resume to Get Started';
+        data.summary = 'Upload your Word document (.docx) or PDF resume to automatically extract your skills and score active job listings.';
+      }
       return data as CandidateProfile;
     }
   }
@@ -172,7 +177,12 @@ export async function fetchAllMatches(): Promise<JobMatch[]> {
       .order('match_score', { ascending: false });
 
     if (!error && data && data.length > 0) {
-      return data as JobMatch[];
+      // Filter out legacy sample jobs from database
+      const realMatches = data.filter((m: any) => {
+        const company = m.job?.company || '';
+        return company !== 'Quantum Scale AI' && company !== 'Aether Logistics Tech' && company !== 'MetaVerse Core';
+      });
+      return realMatches as JobMatch[];
     }
   }
   return inMemoryStore.getMatches();
@@ -180,7 +190,6 @@ export async function fetchAllMatches(): Promise<JobMatch[]> {
 
 export async function saveJobAndMatch(jobData: Omit<Job, 'id' | 'created_at'>, matchAnalysis: any) {
   if (supabase) {
-    // 1. Insert job
     const { data: job, error: jobError } = await supabase
       .from('jobs')
       .upsert(jobData, { onConflict: 'external_id' })
@@ -209,7 +218,6 @@ export async function saveJobAndMatch(jobData: Omit<Job, 'id' | 'created_at'>, m
     }
   }
 
-  // Fallback to in-memory store
   const newJob = inMemoryStore.addJob(jobData);
   const candidate = inMemoryStore.getCandidate();
 

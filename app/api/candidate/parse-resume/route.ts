@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseResumeWithGemini } from '@/lib/gemini';
 import { updateCandidateProfile } from '@/lib/supabase';
+import JSZip from 'jszip';
 
 const mammoth = require('mammoth');
 
@@ -11,6 +12,31 @@ function getPdfParser() {
     console.warn('pdf-parse library module unavailable:', e);
     return null;
   }
+}
+
+// Pure JS zip extractor for .docx word files (word/document.xml)
+async function extractDocxTextWithJSZip(buffer: Buffer): Promise<string> {
+  try {
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXmlFile = zip.file('word/document.xml');
+    if (documentXmlFile) {
+      const xmlText = await documentXmlFile.async('string');
+      // Match all text inside Word <w:t> nodes
+      const matches = xmlText.match(/<w:t[^>]*>(.*?)<\/w:t>/g);
+      if (matches) {
+        const text = matches
+          .map((m) => m.replace(/<[^>]+>/g, ''))
+          .join(' ')
+          .trim();
+        if (text.length > 10) {
+          return text;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('JSZip docx extraction failed:', err);
+  }
+  return '';
 }
 
 export async function POST(req: NextRequest) {
@@ -31,15 +57,20 @@ export async function POST(req: NextRequest) {
         // Magic byte detection
         const isDocxZip = buffer.length > 4 && buffer[0] === 0x50 && buffer[1] === 0x4B; // PK..
         const isPdf = buffer.length > 4 && buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46; // %PDF
-        const isLegacyDoc = buffer.length > 4 && buffer[0] === 0xD0 && buffer[1] === 0xCF; // Compound file
+        const isLegacyDoc = buffer.length > 4 && buffer[0] === 0xD0 && buffer[1] === 0xCF; // Compound binary
 
         if (isDocxZip || isLegacyDoc || fileName.endsWith('.docx') || fileName.endsWith('.doc') || file.type.includes('wordprocessingml') || file.type.includes('msword')) {
-          try {
-            const mammothResult = await mammoth.extractRawText({ buffer });
-            extractedText = mammothResult.value || '';
-          } catch (docErr) {
-            console.warn('mammoth word parsing error:', docErr);
-            extractedText = '';
+          // Try JSZip first for 100% clean <w:t> text node extraction
+          extractedText = await extractDocxTextWithJSZip(buffer);
+
+          if (!extractedText || extractedText.length < 10) {
+            try {
+              const mammothResult = await mammoth.extractRawText({ buffer });
+              extractedText = mammothResult.value || '';
+            } catch (docErr) {
+              console.warn('mammoth word parsing error:', docErr);
+              extractedText = '';
+            }
           }
         } else if (isPdf || fileName.endsWith('.pdf') || file.type === 'application/pdf') {
           const pdfParse = getPdfParser();
@@ -66,11 +97,14 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(pdfBase64, 'base64');
         const isDocxZip = buffer.length > 4 && buffer[0] === 0x50 && buffer[1] === 0x4B;
         if (isDocxZip) {
-          try {
-            const mammothResult = await mammoth.extractRawText({ buffer });
-            extractedText = mammothResult.value || '';
-          } catch (err) {
-            extractedText = '';
+          extractedText = await extractDocxTextWithJSZip(buffer);
+          if (!extractedText) {
+            try {
+              const mammothResult = await mammoth.extractRawText({ buffer });
+              extractedText = mammothResult.value || '';
+            } catch (err) {
+              extractedText = '';
+            }
           }
         } else {
           const pdfParse = getPdfParser();
@@ -88,18 +122,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Strip out ZIP headers, OpenXML noise, and control characters
+    // Sanitize extracted text: Strip any XML/ZIP leftover headers and non-printable chars
     extractedText = extractedText
       .replace(/PK![\s\S]*?\[Content_Types\]\.xml/gi, '')
       .replace(/_rels\/\.rels/gi, '')
       .replace(/word\/[a-zA-Z0-9_\.\/-]+/gi, '')
+      .replace(/<[^>]+>/g, ' ')
       .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
     if (!extractedText || extractedText.length < 15) {
       return NextResponse.json(
-        { error: 'Could not extract readable text from document. Please make sure the file is a valid Word (.docx) or PDF document.' },
+        { error: 'Could not extract readable text from document. Please ensure your Word (.docx) or PDF document contains select-able text.' },
         { status: 400 }
       );
     }

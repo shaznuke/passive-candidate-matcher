@@ -31,7 +31,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
 
   const handleParseSubmit = async () => {
     if (!selectedFile && (!rawResumeText || rawResumeText.trim().length < 20)) {
-      setErrorMessage('Please choose a Word document (.docx/.doc), PDF, or paste resume text.');
+      setErrorMessage('Please choose a Word document (.docx/.doc) or PDF file.');
       return;
     }
 
@@ -108,7 +108,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Upload Your Resume</h2>
-              <p className="text-xs text-slate-400">Supports Microsoft Word (.docx / .doc), PDF (.pdf), and Text files</p>
+              <p className="text-xs text-slate-400">Supports Microsoft Word (.docx / .doc) and PDF (.pdf) files</p>
             </div>
           </div>
 
@@ -131,7 +131,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
             }`}
           >
             <Upload className="w-4 h-4" />
-            Upload File (Word / PDF / Text)
+            Upload File (Word .docx / PDF)
           </button>
           <button
             onClick={() => setActiveTab('view')}
@@ -170,7 +170,7 @@ export const ProfileManager: React.FC<ProfileManagerProps> = ({
                     <span>Choose Word (.docx) or PDF File</span>
                     <input
                       type="file"
-                      accept=".docx,.doc,.pdf,.txt,.md,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/pdf"
+                      accept=".docx,.doc,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/pdf"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
